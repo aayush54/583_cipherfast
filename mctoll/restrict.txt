@@ -1,0 +1,6 @@
+exclude-functions {
+  app:i32  __printf_chk(i32, i64)
+  app:void __stack_chk()
+  app:void __stack_chk_fail()
+  app:void __explicit_bzero_chk(i64, i64, i64)
+}
