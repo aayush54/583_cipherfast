@@ -23,3 +23,6 @@
 # Executables
 *.exe
 *.app
+
+.vscode
+build
