@@ -18,6 +18,12 @@ namespace {
             llvm::outs() << "\n";
             errs() << I << "\n";
           }
+
+          if (auto *load = dyn_cast<LoadInst>(&I)) { //AllocaInst? someone could look into this
+            load->print(llvm::outs());
+            llvm::outs() << "\n";
+            errs() << I << "\n";
+          }
         }
       }
       return false;

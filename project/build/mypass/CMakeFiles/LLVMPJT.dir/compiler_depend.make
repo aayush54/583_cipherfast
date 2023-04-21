@@ -1077,19 +1077,19 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
   /usr/local/include/llvm/Support/MD5.h \
   /usr/local/include/llvm/Support/Endian.h \
   /usr/local/include/llvm/IR/OperandTraits.h \
-  /usr/local/include/llvm/IR/InstrTypes.h \
-  /usr/local/include/llvm/ADT/Sequence.h \
   /usr/local/include/llvm/IR/Instructions.h \
   /usr/local/include/llvm/ADT/MapVector.h \
   /usr/local/include/llvm/IR/CFG.h \
-  /usr/local/include/llvm/ADT/GraphTraits.h
+  /usr/local/include/llvm/ADT/GraphTraits.h \
+  /usr/local/include/llvm/IR/InstrTypes.h \
+  /usr/local/include/llvm/ADT/Sequence.h
 
+
+/usr/local/include/llvm/IR/InstrTypes.h:
 
 /usr/local/include/llvm/ADT/GraphTraits.h:
 
 /usr/local/include/llvm/IR/CFG.h:
-
-/usr/local/include/llvm/IR/InstrTypes.h:
 
 ../mypass/mypass3.cpp:
 
