@@ -22,8 +22,7 @@
 
 # Executables
 *.exe
-*.out
 *.app
 
-# LLVM commands
-command.txt
+.vscode
+build
