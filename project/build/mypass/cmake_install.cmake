@@ -1,4 +1,4 @@
-# Install script for directory: /n/eecs583b/home/vlunani/project/mypass
+# Install script for directory: /n/eecs583b/home/taeyoon/583_cipherfast/project/mypass
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
@@ -43,7 +43,7 @@ if(NOT DEFINED CMAKE_OBJDUMP)
 endif()
 
 if("x${CMAKE_INSTALL_COMPONENT}x" STREQUAL "xLLVMPJTx" OR NOT CMAKE_INSTALL_COMPONENT)
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE MODULE FILES "/n/eecs583b/home/vlunani/project/build/mypass/LLVMPJT.so")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" TYPE MODULE FILES "/n/eecs583b/home/taeyoon/583_cipherfast/project/build/mypass/LLVMPJT.so")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/LLVMPJT.so" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/LLVMPJT.so")
     if(CMAKE_INSTALL_DO_STRIP)

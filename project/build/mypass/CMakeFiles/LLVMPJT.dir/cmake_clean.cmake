@@ -1,6 +1,10 @@
 file(REMOVE_RECURSE
   "CMakeFiles/LLVMPJT.dir/mypass.cpp.o"
   "CMakeFiles/LLVMPJT.dir/mypass.cpp.o.d"
+  "CMakeFiles/LLVMPJT.dir/mypass2.cpp.o"
+  "CMakeFiles/LLVMPJT.dir/mypass2.cpp.o.d"
+  "CMakeFiles/LLVMPJT.dir/mypass3.cpp.o"
+  "CMakeFiles/LLVMPJT.dir/mypass3.cpp.o.d"
   "LLVMPJT.pdb"
   "LLVMPJT.so"
 )

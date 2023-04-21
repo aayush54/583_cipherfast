@@ -17,9 +17,27 @@ namespace {
             return false;
         }
     };
+
+//     struct Hello : public FunctionPass {
+// //    struct PrintInstructions : public FunctionPass {
+//     static char ID;
+// //    PrintInstructions() : FunctionPass(ID) {}
+//     Hello() : FunctionPass(ID) {}
+//         bool runOnFunction(Function &F) override {
+//         for (auto &BB : F) {
+//             for (auto &I : BB) {
+//             I.print(llvm::outs());
+//             errs() << I << '\n';
+//             }
+//         }
+//         return false;
+//         }
+//     };
 }
 
 char Hello::ID = 0;
 static RegisterPass<Hello> X("hello", "Hello World Pass",
                              false /* Only looks at CFG */,
                              false /* Analysis Pass */);
+
+// pass name -->vHello --> hello or Hello World Pass
