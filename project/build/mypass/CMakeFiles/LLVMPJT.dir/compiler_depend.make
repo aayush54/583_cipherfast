@@ -1077,19 +1077,57 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
   /usr/local/include/llvm/Support/MD5.h \
   /usr/local/include/llvm/Support/Endian.h \
   /usr/local/include/llvm/IR/OperandTraits.h \
-  /usr/local/include/llvm/IR/InstrTypes.h \
-  /usr/local/include/llvm/ADT/Sequence.h \
   /usr/local/include/llvm/IR/Instructions.h \
   /usr/local/include/llvm/ADT/MapVector.h \
   /usr/local/include/llvm/IR/CFG.h \
-  /usr/local/include/llvm/ADT/GraphTraits.h
+  /usr/local/include/llvm/ADT/GraphTraits.h \
+  /usr/local/include/llvm/IR/InstrTypes.h \
+  /usr/local/include/llvm/ADT/Sequence.h \
+  /usr/local/include/llvm/IR/Constants.h \
+  /usr/local/include/llvm/ADT/APFloat.h \
+  /usr/local/include/llvm/ADT/APInt.h \
+  /usr/local/include/llvm/ADT/FloatingPointMode.h \
+  /usr/local/include/llvm/ADT/StringSwitch.h \
+  /usr/include/c++/11/iostream \
+  /usr/include/c++/11/ostream \
+  /usr/include/c++/11/ios \
+  /usr/include/c++/11/bits/basic_ios.h \
+  /usr/include/c++/11/bits/locale_facets.h \
+  /usr/include/c++/11/cwctype \
+  /usr/include/wctype.h \
+  /usr/include/x86_64-linux-gnu/bits/wctype-wchar.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/ctype_base.h \
+  /usr/include/x86_64-linux-gnu/c++/11/bits/ctype_inline.h \
+  /usr/include/c++/11/bits/locale_facets.tcc \
+  /usr/include/c++/11/bits/basic_ios.tcc \
+  /usr/include/c++/11/bits/ostream.tcc \
+  /usr/include/c++/11/istream \
+  /usr/include/c++/11/bits/istream.tcc
 
+
+/usr/include/c++/11/istream:
+
+/usr/include/c++/11/bits/ostream.tcc:
+
+/usr/include/x86_64-linux-gnu/c++/11/bits/ctype_inline.h:
+
+/usr/include/x86_64-linux-gnu/c++/11/bits/ctype_base.h:
+
+/usr/include/x86_64-linux-gnu/bits/wctype-wchar.h:
+
+/usr/include/c++/11/ostream:
+
+/usr/local/include/llvm/ADT/FloatingPointMode.h:
+
+/usr/local/include/llvm/ADT/APInt.h:
+
+/usr/local/include/llvm/IR/Constants.h:
+
+/usr/local/include/llvm/IR/InstrTypes.h:
 
 /usr/local/include/llvm/ADT/GraphTraits.h:
 
 /usr/local/include/llvm/IR/CFG.h:
-
-/usr/local/include/llvm/IR/InstrTypes.h:
 
 ../mypass/mypass3.cpp:
 
@@ -1124,6 +1162,8 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
 /usr/local/include/llvm/ADT/Bitfields.h:
 
 /usr/local/include/llvm/ADT/simple_ilist.h:
+
+/usr/include/c++/11/bits/istream.tcc:
 
 /usr/local/include/llvm/IR/Use.h:
 
@@ -1369,7 +1409,11 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
 
 /usr/include/asm-generic/errno-base.h:
 
+/usr/include/c++/11/bits/locale_facets.tcc:
+
 /usr/include/x86_64-linux-gnu/bits/types/struct_tm.h:
+
+/usr/local/include/llvm/ADT/StringSwitch.h:
 
 /usr/include/c++/11/bits/stringfwd.h:
 
@@ -1419,6 +1463,8 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
 
 /usr/local/include/llvm/ADT/iterator.h:
 
+/usr/include/c++/11/bits/locale_facets.h:
+
 /usr/include/c++/11/bits/exception.h:
 
 /usr/include/x86_64-linux-gnu/bits/wchar.h:
@@ -1426,6 +1472,8 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
 /usr/include/x86_64-linux-gnu/bits/local_lim.h:
 
 /usr/local/include/llvm/ADT/STLExtras.h:
+
+/usr/include/c++/11/iostream:
 
 /usr/include/x86_64-linux-gnu/bits/fp-fast.h:
 
@@ -1523,6 +1571,8 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
 
 /usr/include/c++/11/cstdint:
 
+/usr/include/wctype.h:
+
 /usr/include/sched.h:
 
 /usr/local/include/llvm/Support/ErrorHandling.h:
@@ -1556,6 +1606,8 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
 /usr/include/c++/11/clocale:
 
 /usr/include/wchar.h:
+
+/usr/include/c++/11/bits/basic_ios.h:
 
 /usr/include/c++/11/bits/uniform_int_dist.h:
 
@@ -1655,9 +1707,13 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
 
 /usr/include/inttypes.h:
 
+/usr/include/c++/11/cwctype:
+
 /usr/local/include/llvm/Config/llvm-config.h:
 
 /usr/include/c++/11/vector:
+
+/usr/local/include/llvm/ADT/APFloat.h:
 
 /usr/include/c++/11/bits/align.h:
 
@@ -1702,6 +1758,8 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
 /usr/include/c++/11/bits/hashtable.h:
 
 /usr/include/c++/11/bits/hashtable_policy.h:
+
+/usr/include/c++/11/bits/basic_ios.tcc:
 
 /usr/include/c++/11/bits/enable_special_members.h:
 
@@ -1758,6 +1816,8 @@ mypass/CMakeFiles/LLVMPJT.dir/mypass3.cpp.o: ../mypass/mypass3.cpp \
 /usr/include/c++/11/bits/locale_classes.h:
 
 /usr/include/c++/11/bits/locale_classes.tcc:
+
+/usr/include/c++/11/ios:
 
 /usr/include/c++/11/utility:
 
