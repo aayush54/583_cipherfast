@@ -34,7 +34,7 @@ void public_comp(char* result, char* input1, char* input2, int size){
 void print_char(char* input){
     for(int i=0; i<sizeof(input) ; i++)
     {
-        printf(i);
+        printf("%i", i);
         printf("%c",input[i]);
     }
 }
