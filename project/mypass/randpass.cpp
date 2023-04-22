@@ -19,6 +19,7 @@
 #include "llvm/IR/Module.h"
 
 using namespace llvm;
+Function *main_func;
 
 namespace
 {
@@ -30,19 +31,23 @@ namespace
         bool runOnFunction(Function &F) override
         {
 
-            for (BasicBlock::iterator BI = BB->begin(), BE = BB->end(); BI != BE; ++BI)
+            for (BasicBlock &BB : F)
             {
-                if (isa<BranchInst>(&(*BI)))
+                for (BasicBlock::iterator BI = BB.begin(), BE = BB.end(); BI != BE; ++BI)
                 {
-                    errs() << "found a brach instruction!\n";
-                    ArrayRef<Value *> arguments(ConstantInt::get(Type::getInt32Ty(M.getContext()), counter, true));
-                    Instruction *newInst = CallInst::Create(main_func, arguments, "");
-                    BB->getInstList().insert(BI, newInst);
-                    errs() << "Inserted the function!\n";
+                    if (isa<BranchInst>(&(*BI)))
+                    {
+                        errs() << "found a brach instruction!\n";
+                        Instruction *newInst = CallInst::Create(main_func, "");
+                        BB.getInstList().insert(BI, newInst);
+                        errs() << "Inserted the function!\n";
+                    }
                 }
             }
+
+            return true;
         }
-    }
+    };
 }
 
 bool doInitialization(Module &M)
@@ -55,8 +60,8 @@ bool doInitialization(Module &M)
     // build a 'main' function
     auto i32 = builder.getInt32Ty();
     auto prototype = FunctionType::get(i32, false);
-    main_fn = Function::Create(prototype, Function::ExternalLinkage, "main", module.get());
-    BasicBlock *body = BasicBlock::Create(context, "body", main_fn);
+    main_func = Function::Create(prototype, Function::ExternalLinkage, "main", module.get());
+    BasicBlock *body = BasicBlock::Create(context, "body", main_func);
     builder.SetInsertPoint(body);
 
     // use libc's printf function
@@ -73,9 +78,6 @@ bool doInitialization(Module &M)
     builder.CreateRet(ret);
 
     return false;
-}
-}
-;
 }
 
 char Hello::ID = 0;
