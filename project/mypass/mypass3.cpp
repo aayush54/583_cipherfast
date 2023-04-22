@@ -10,7 +10,7 @@
 #include <ctime>
 #include <cmath>
 #include <unordered_map>
-
+#include <stddef.h>
 
 using namespace llvm;
 
@@ -21,6 +21,7 @@ namespace {
 
     // create the hash table in the global space
     std::unordered_map< Value* /*memory address*/, Value* /*mask address*/> m;
+    unsigned int start_address = 0;
 
     bool runOnFunction(Function &F) override {
       std::srand(std::time(nullptr)); // initialize random seed
@@ -60,12 +61,14 @@ namespace {
             //===viraj random masking=====//
             // allocate space for mask
             Value *storedValueType = store->getValueOperand();
-            int store_size = dyn_cast<IntegerType>(storedValueType->getType())->getBitWidth();
-            AllocaInst* maskAlloca = new AllocaInst(storedValueType->getType(), 0, Twine(), store);
+            unsigned int store_size = dyn_cast<IntegerType>(storedValueType->getType())->getBitWidth();
+            AllocaInst* maskAlloca = new AllocaInst(storedValueType->getType(), start_address, Twine(), store);
             //errs() << *maskAlloca << "\n";
+            start_address += store_size;
             
             // generate mask of store_size bits
             int random_number = std::rand() % int(pow(2, store_size));
+            errs() << "randomly generated mask: " << random_number << "\n";
             Value* random_number_value = ConstantInt::get(IntegerType::get(Context, store_size), random_number);
             // errs() << random_number << "\n";
 
@@ -79,10 +82,10 @@ namespace {
             maskInst->insertBefore(store);
             // errs() << *maskInst << '\n';
 
-            // store masked value
+            // store masked value --> do getOperand(0) after to make sure we are storing the right mask value
             store->setOperand(0, maskInst);
-            // errs() << *store << '\n';
-            // errs() << "\n" << "\n";
+            errs() << "new store: " << *store << '\n';
+            errs() << "\n" << "\n";
             //===viraj random masking done=====//
 
             // get the store pointer (memory address)
@@ -92,51 +95,65 @@ namespace {
 
             // get the memory pointer for alloca inst
             //Value* maskAddress2 = maskAlloca->getPointerOperand();
-            Value* maskAddress = maskAlloca->getOperand(0);
-            errs() << "mask address: " << maskAddress << "\n";
+            //Value* maskAddress = maskAlloca->getOperand(0); //this gives you the type of the new store
+            //errs() << "mask address1?: " << maskAddress << "\n"; 
+            unsigned int maskAddress = maskAlloca->getAddressSpace();
+            errs() << "mask address2?: " << maskAddress << "\n";
+
 
             // hash the memory address with mask address
-            m[stPtrOperand] = maskAddress; //replace with hash memory
+          //  m[stPtrOperand] = maskAddress; //replace with hash memory
             //errs() << "hash table: " << m[stPtrOperand] << '\n';
 
           }
 
-          if (auto *load = dyn_cast<LoadInst>(&I)) { //AllocaInst? someone could look into this
-            load->print(llvm::outs());
-            llvm::outs() << "\n";
-            errs() << I << "\n";
+          // if (auto *load = dyn_cast<LoadInst>(&I)) { //AllocaInst? someone could look into this
+          //   load->print(llvm::outs());
+          //   llvm::outs() << "\n";
+          //   errs() << I << "\n";
 
-            // get load memory address (pointer)
-            Value* ldPtrOperand = load->getPointerOperand();
-            errs() << "get load pointer operand *: " << *ldPtrOperand << "\n";
-            errs() << "get load pointer operand: " << ldPtrOperand << "\n";
+          //   // get load memory address (pointer)
+          //   Value* ldPtrOperand = load->getPointerOperand();
+          //   // Value* ldPtrOperand = load->getValueOperand();
+          //   errs() << "get load pointer operand *: " << *ldPtrOperand << "\n";
+          //   errs() << "get load pointer operand: " << ldPtrOperand << "\n";
 
-            // search load memory address from hash table
-            if(!m[ldPtrOperand]){
-              errs() << "not found in hash" << '\n';
+          //   // search load memory address from hash table
+          //   if(!m[ldPtrOperand]){
+          //     errs() << "not found in hash" << '\n';
 
-            }
-            else {
-              errs() << "found hash value! \n";
+          //   }
+          //   else {
+          //     errs() << "found hash value! \n";
               
-              //we can't do XOR with Value* of different type
-              errs() << *m[ldPtrOperand]->getType() << "\n"; //i32?
-              errs() << *ldPtrOperand->getType() << "\n"; // ptr
+          //     // //Type* valType = ldPtrOperand->getType()->getPointerElementType(); // Type of value being pointed to
 
-              //Instruction* maskInst = BinaryOperator::CreateXor(m[ldPtrOperand], ldPtrOperand, "xor");
-              //errs() << maskInst << "\n";
-
-              // how to return the value when XOR just compututes?
-              // %insert_result = insertvalue %my_struct %s, i32 %value, 1
+          //     // //we can't do XOR with Value* of different type
+          //     // errs() << *m[ldPtrOperand]->getType() << "\n"; //i32?
+          //     // errs() << *ldPtrOperand << "\n"; // ptr
               
-            }
+
+
+          //     // Instruction* ldMaskInst = BinaryOperator::CreateXor(m[ldPtrOperand], ldPtrOperand, "xor");
+          //     // errs() << ldMaskInst << "\n";
+          //     // maskInst->insertAfter(load);
+
+          //     // // how to return the value when XOR just compututes?
+          //     // // %insert_result = insertvalue %my_struct %s, i32 %value, 1
+          //     // // just
+          //     // // newPtr = ???;
+          //     // load->setOperand(0, newPtr);
+
+
+              
+          //   }
             
-            // get mask value from pointer
+          //   // get mask value from pointer
 
-            // decode data 
-            // (value stored in the load mem address) XOR (mask) =
+          //   // decode data 
+          //   // (value stored in the load mem address) XOR (mask) =
              
-          }
+          // }
         }
       }
       return false;

@@ -29,6 +29,9 @@
 command.txt
 instructions.txt
 
+# old files
+old/
+
 .vscode
 build
 
