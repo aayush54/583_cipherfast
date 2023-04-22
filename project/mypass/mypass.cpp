@@ -36,7 +36,7 @@ namespace {
 }
 
 char Hello::ID = 0;
-static RegisterPass<Hello> X("hello", "Hello World Pass",
+static RegisterPass<Hello> X("mypass", "Hello World Pass",
                              false /* Only looks at CFG */,
                              false /* Analysis Pass */);
 
