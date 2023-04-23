@@ -29,40 +29,13 @@ namespace {
       for (auto &BB : F) {
         for (auto &I : BB) {
           if (auto *store = dyn_cast<StoreInst>(&I)) { 
-            // store->print(llvm::outs());
-            // llvm::outs() << "\n";
+            // print st instruction
             errs() << I << "\n";
 
-            // // get the store pointer (memory address)
-            // Value* stPtrOperand = store->getPointerOperand();
-            // errs() << "get store pointer operand *: " << *stPtrOperand << "\n";
-            // errs() << "get store pointer operand: " << stPtrOperand << "\n";
-
-            // // hash the memory address with mask address
-            // m[stPtrOperand] = store->getValueOperand(); //replace with hash memory
-            // errs() << "hash table: " << m[stPtrOperand] << '\n';
-
-
-            // // Get the type of the value being stored
-            // // 0x55e7d2448260 32
-            // // 0x55e7d2448230 8
-            // // 0x55e7d2448278 64
-            // Type *storedValueType = store->getValueOperand()->getType();
-            // errs() << "getValueOperand"<<*store->getValueOperand() << '\n';
-            // // Check if the stored value type is an i64 type
-            // if (auto *intType = dyn_cast<IntegerType>(storedValueType)) {
-            //   if (intType->getBitWidth() == 64) {
-            //     // The stored value type is an i64 type
-            //     errs() <<"stored value type"<< *storedValueType << "\n";
-            //   }
-            // }
-            // //if(storedValueType->getIntegerBitWidth == 64)errs() << storedValueType << "\n";
-
-            //===viraj random masking=====//
             // allocate space for mask
-            Value *storedValueType = store->getValueOperand();
-            unsigned int store_size = dyn_cast<IntegerType>(storedValueType->getType())->getBitWidth();
-            AllocaInst* maskAlloca = new AllocaInst(storedValueType->getType(), start_address, Twine(), store);
+            Value *storedValue = store->getValueOperand();
+            unsigned int store_size = dyn_cast<IntegerType>(storedValue->getType())->getBitWidth();
+            AllocaInst* maskAlloca = new AllocaInst(storedValue->getType(), start_address, Twine(), store);
             //errs() << *maskAlloca << "\n";
             start_address += store_size;
             
@@ -70,7 +43,7 @@ namespace {
             int random_number = std::rand() % int(pow(2, store_size));
             errs() << "randomly generated mask: " << random_number << "\n";
             Value* random_number_value = ConstantInt::get(IntegerType::get(Context, store_size), random_number);
-            // errs() << random_number << "\n";
+             errs() << random_number_value << "\n";
 
             // store mask in allocated space
             StoreInst* maskStore = new StoreInst(random_number_value, maskAlloca, store);
@@ -78,15 +51,14 @@ namespace {
 
             // apply mask to write
             // errs() << "----" << *random_number_value->getType() << ' ' << *storedValueType->getType() << "----\n";
-            Instruction* maskInst = BinaryOperator::CreateXor(random_number_value, storedValueType, "xor");
+            Instruction* maskInst = BinaryOperator::CreateXor(random_number_value, storedValue, "xor");
             maskInst->insertBefore(store);
             // errs() << *maskInst << '\n';
 
-            // store masked value --> do getOperand(0) after to make sure we are storing the right mask value
+            // store masked value to the store address
+            // --> do getOperand(0) after to make sure we are storing the right mask value
             store->setOperand(0, maskInst);
             errs() << "new store: " << *store << '\n';
-            errs() << "\n" << "\n";
-            //===viraj random masking done=====//
 
             // get the store pointer (memory address)
             Value* stPtrOperand = store->getPointerOperand();
@@ -101,9 +73,13 @@ namespace {
             errs() << "mask address2?: " << maskAddress << "\n";
 
 
-            // hash the memory address with mask address
-          //  m[stPtrOperand] = maskAddress; //replace with hash memory
-            //errs() << "hash table: " << m[stPtrOperand] << '\n';
+            // hash the memory address with mask value
+            m[stPtrOperand] = random_number_value; //replace with hash memory
+            errs() << "hash table key address: " << stPtrOperand << '\n';
+            errs() << "hash table: " << m[stPtrOperand] << '\n';
+
+            // end of st inst
+            errs() << "\n" << "\n";
 
           }
 

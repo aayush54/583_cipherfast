@@ -25,9 +25,10 @@
 *.app
 
 
-# LLVM commands
+# text files
 command.txt
 instructions.txt
+todo.txt
 
 # old files
 old/
