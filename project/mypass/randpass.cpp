@@ -90,17 +90,6 @@ namespace
         static char ID;
         Hello() : FunctionPass(ID) {}
 
-        bool runOnFunction(Function &F) override
-        {
-
-            // Instruction &x = F.front().front();
-            // IRBuilder<> builder(&x);
-
-            // builder.CreateCall(main_func, seed);
-
-            return true;
-        }
-
         bool doInitialization(Module &M) override
         {
             main_func = createXorshift32(&M);
@@ -109,24 +98,38 @@ namespace
             // Get the LLVM context
             LLVMContext context;
 
+            auto intType = IntegerType::get(context, 32);
+
             // Create an array type with one element of type i32
-            ArrayType *arrType = ArrayType::get(Type::getInt32Ty(context), 1);
+            errs() << "hi\n";
 
             std::vector<Constant *> values;
-            /* Make the value 42 appear in the array - ty is "i32" */
-            Constant *c = ConstantInt::get(Type::getInt32PtrTy(context), 42);
-            values.push_back(c);
-            llvm::Constant *init = llvm::ConstantArray::get(ArrayType::getInt32PtrTy(context), values);
+            values.push_back(ConstantInt::get(intType, 47));
+            auto arrType = ArrayType::get(intType, values.size());
 
             errs() << "hi\n";
 
-            // Create a global variable of the array type and initialize the first element to 32
-            GlobalVariable *myArray = new GlobalVariable(M, arrType, true, GlobalVariable::LinkageTypes::ExternalLinkage, nullptr, "myArray");
-            // myArray->setInitializer(init);
+            auto globalDeclaration = (llvm::GlobalVariable *)M.getOrInsertGlobal("seed", arrType);
+            globalDeclaration->setInitializer(llvm::ConstantArray::get(arrType, values));
+            globalDeclaration->setConstant(false);
+            globalDeclaration->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
+            globalDeclaration->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
 
             errs() << "Created global\n";
 
             // Add the global variable to the module
+
+            return true;
+        }
+
+        bool runOnFunction(Function &F) override
+        {
+
+            // Instruction &x = F.front().front();
+            // IRBuilder<> builder(&x);
+
+            // builder.CreateCall(main_func, seed);
+            errs() << "RUNFUNC\n";
 
             return true;
         }

@@ -1,5 +1,5 @@
 digraph "CFG for 'declassify' function" {
 	label="CFG for 'declassify' function";
 
-	Node0x5565e7b99150 [shape=record,color="#b70d28ff", style=filled, fillcolor="#b70d2870",label="{entry:\l  %stktop_4 = alloca i8, i32 20, align 1\l  %tos = ptrtoint ptr %stktop_4 to i64\l  %0 = add i64 %tos, 12\l  %RBP_N.8 = inttoptr i64 %0 to ptr\l  %1 = add i64 %tos, 0\l  %RSP_P.0 = inttoptr i64 %1 to ptr\l  store i64 3735928559, ptr %RSP_P.0, align 8\l  %RBP = ptrtoint ptr %RSP_P.0 to i64\l  store i64 %arg1, ptr %RBP_N.8, align 1\l  store i32 %arg2, ptr %stktop_4, align 1\l  ret void\l}"];
+	Node0x558a8c402cd0 [shape=record,color="#b70d28ff", style=filled, fillcolor="#b70d2870",label="{entry:\l  %ptr.addr = alloca ptr, align 8\l  %length.addr = alloca i32, align 4\l  store ptr %ptr, ptr %ptr.addr, align 8\l  store i32 %length, ptr %length.addr, align 4\l  call void asm sideeffect \"\", \"~\{dirflag\},~\{fpsr\},~\{flags\}\"() #5, !srcloc !6\l  ret void\l}"];
 }
