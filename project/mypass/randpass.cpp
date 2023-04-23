@@ -17,26 +17,33 @@
 #include "llvm/IR/LLVMContext.h"
 #include "llvm/IR/Type.h"
 #include "llvm/IR/Module.h"
+#include <unordered_map>
 
 using namespace llvm;
 Function *main_func;
+std::unordered_map<int, Function *> maskGen;
 GlobalVariable *seed;
 
-Function *createXorshift32(Module *module)
+// Create mask function for given size (8, 32, 64, etc.)
+Function *createXorshift(Module *module, int bitsize)
 {
     LLVMContext &context = module->getContext();
-    Type *int32Ty = Type::getInt32Ty(context);
+    // Type *int32Ty = Type::getInt32Ty(context);
     Type *int64Ty = Type::getInt64Ty(context);
-    Type *int32PtrTy = Type::getInt32PtrTy(context);
-    Type *int64PtrTy = Type::getInt64PtrTy(context);
+    // Type *int32PtrTy = Type::getInt32PtrTy(context);
+    // Type *int64PtrTy = Type::getInt64PtrTy(context);
+
+    Type *intTy = Type::getIntNTy(context, bitsize);
+    Type *intPtrTy = Type::getIntNPtrTy(context, bitsize);
 
     // Define the function type
-    FunctionType *funcType = FunctionType::get(int32Ty, {int32PtrTy}, false);
+    FunctionType *funcType = FunctionType::get(intTy, intPtrTy, false);
 
     // Create the function
+    std::string name = "__xorshift" + std::to_string(bitsize);
     Function *func = Function::Create(
-        funcType, Function::LinkageTypes::ExternalLinkage,
-        "xorshift32", module);
+        funcType, Function::LinkageTypes::PrivateLinkage,
+        name, module);
 
     // Create the entry basic block
     BasicBlock *entryBB = BasicBlock::Create(context, "entry", func);
@@ -45,20 +52,20 @@ Function *createXorshift32(Module *module)
     IRBuilder<> builder(entryBB);
 
     // Allocate memory for the state pointer and the x variable
-    AllocaInst *stateAddr = builder.CreateAlloca(int32PtrTy);
-    AllocaInst *x = builder.CreateAlloca(int32Ty);
+    AllocaInst *stateAddr = builder.CreateAlloca(intPtrTy);
+    AllocaInst *x = builder.CreateAlloca(intTy);
 
     // Store the state argument into the state pointer
     Argument &stateArg = *(func->arg_begin());
     builder.CreateStore(&stateArg, stateAddr);
 
     // Load the state pointer and get the first element of the state array
-    LoadInst *stateLoad = builder.CreateLoad(int32PtrTy, stateAddr);
+    LoadInst *stateLoad = builder.CreateLoad(intPtrTy, stateAddr);
     Constant *zero = ConstantInt::get(int64Ty, 0);
-    Value *arrayIdx = builder.CreateGEP(int32Ty, stateLoad, zero);
+    Value *arrayIdx = builder.CreateGEP(intTy, stateLoad, zero);
 
     // Load the first element of the state array into x
-    LoadInst *xLoad = builder.CreateLoad(int32Ty, arrayIdx);
+    LoadInst *xLoad = builder.CreateLoad(intTy, arrayIdx);
     builder.CreateStore(xLoad, x);
 
     // Apply the xorshift32 algorithm to x
@@ -75,7 +82,7 @@ Function *createXorshift32(Module *module)
     builder.CreateStore(xor3, x);
 
     // Store the updated x back into the state array
-    LoadInst *xFinalLoad = builder.CreateLoad(int32Ty, x);
+    LoadInst *xFinalLoad = builder.CreateLoad(intTy, x);
     builder.CreateStore(xFinalLoad, arrayIdx);
 
     // Return the final value of x
@@ -92,51 +99,48 @@ namespace
 
         bool doInitialization(Module &M) override
         {
-            main_func = createXorshift32(&M);
+            maskGen[8] = createXorshift(&M, 8);
+            maskGen[16] = createXorshift(&M, 16);
+            maskGen[32] = createXorshift(&M, 32);
+            maskGen[64] = createXorshift(&M, 64);
             errs() << "Created func\n";
 
             // Get the LLVM context
-            LLVMContext context;
-
-            auto intType = IntegerType::get(context, 32);
+            LLVMContext &context = M.getContext();
+            auto intType = IntegerType::get(context, 64);
 
             // Create an array type with one element of type i32
-            errs() << "hi\n";
 
             std::vector<Constant *> values;
             values.push_back(ConstantInt::get(intType, 47));
             auto arrType = ArrayType::get(intType, values.size());
 
-            errs() << "hi\n";
-            auto init = llvm::ConstantArray::get(arrType, values);
+            auto init = ConstantArray::get(arrType, values);
 
-            // auto globalDeclaration = new GlobalVariable(
-            //     arrType,
-            //     false,
-            //     GlobalValue::LinkageTypes::CommonLinkage,
-            //     init,
-            //     "seed");
-            auto globalDeclaration = (llvm::GlobalVariable *)M.getOrInsertGlobal("seed", arrType);
-            globalDeclaration->setInitializer(init);
-            globalDeclaration->setConstant(false);
-            globalDeclaration->setLinkage(llvm::GlobalValue::LinkageTypes::CommonLinkage);
-            globalDeclaration->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+            seed = (llvm::GlobalVariable *)M.getOrInsertGlobal("seed", arrType);
+            seed->setInitializer(init);
+            seed->setConstant(false);
+            seed->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
+            seed->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
 
             errs() << "Created global\n";
 
             // Add the global variable to the module
-
             return true;
         }
 
         bool runOnFunction(Function &F) override
         {
 
-            // Instruction &x = F.front().front();
-            // IRBuilder<> builder(&x);
+            //! Make sure not to instrument the xorshift mask generators
+            if (F.getName().substr(0, 10) == "__xorshift")
+                return false;
 
-            // builder.CreateCall(main_func, seed);
-            errs() << "RUNFUNC\n";
+            errs() << F.getName() << "\n";
+
+            Instruction &x = F.front().front();
+            IRBuilder<> builder(&x);
+            builder.CreateCall(maskGen[32], seed);
 
             return true;
         }
