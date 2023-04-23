@@ -38,5 +38,5 @@ for dotfile in $DOT_FILES ; do
 done
 
 
-cat .main.dot | dot -Tpdf > $OUTPUT_DIR/$BENCH.$VIZ_TYPE.pdf
+# cat .main.dot | dot -Tpdf > $OUTPUT_DIR/$BENCH.$VIZ_TYPE.pdf
 echo "Created $BENCH.$VIZ_TYPE.pdf"
