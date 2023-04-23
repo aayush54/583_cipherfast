@@ -108,11 +108,18 @@ namespace
             auto arrType = ArrayType::get(intType, values.size());
 
             errs() << "hi\n";
+            auto init = llvm::ConstantArray::get(arrType, values);
 
+            // auto globalDeclaration = new GlobalVariable(
+            //     arrType,
+            //     false,
+            //     GlobalValue::LinkageTypes::CommonLinkage,
+            //     init,
+            //     "seed");
             auto globalDeclaration = (llvm::GlobalVariable *)M.getOrInsertGlobal("seed", arrType);
-            globalDeclaration->setInitializer(llvm::ConstantArray::get(arrType, values));
+            globalDeclaration->setInitializer(init);
             globalDeclaration->setConstant(false);
-            globalDeclaration->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
+            globalDeclaration->setLinkage(llvm::GlobalValue::LinkageTypes::CommonLinkage);
             globalDeclaration->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
 
             errs() << "Created global\n";
