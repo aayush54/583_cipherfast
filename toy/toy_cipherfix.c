@@ -26,9 +26,9 @@ void mix_comp(char* result, char* public, char* private, int size){
 }
 // only comp public data
 void public_comp(char* result, char* input1, char* input2, int size){
-    char r[4]; 
+    char r[4] = {'A', 'b', 'C', 'e'}; 
     for(int i=0; i<size; i++) result[i] = input1[i] * input2[i];
-    for(int i = 0; i < size; ++i) result[i] = r[i];
+    for(int i = 0; i < size; ++i) result[i] += r[i];
 }
 
 void print_char(char* input){
@@ -89,6 +89,15 @@ int main()
     char mix[4];
     mix_comp(mix, pub3, result1, 4);
 
-    printf("done\n");
+    printf("public-comp:");
+    for (int i = 0; i < 4; ++i) printf(" %d", pub3[i]);
+    printf("\n");
+    printf("secret-comp:");
+    for (int i = 0; i < 4; ++i) printf(" %d", p2[i]);
+    printf("\n");
+    printf("mix-comp:");
+    for (int i = 0; i < 4; ++i) printf(" %d", mix[i]);
+    printf("\n");
 
+    return 0;
 }

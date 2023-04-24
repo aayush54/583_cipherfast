@@ -20,11 +20,13 @@
 #include <cmath>
 #include <unordered_map>
 #include <stddef.h>
-
+#include <vector>
 
 
 using namespace llvm;
 
+std::vector<LoadInst*> maskedLoads;
+std::vector<StoreInst*> maskedStores;
 Function *main_func;
 std::unordered_map<int, Function *> maskGen;
 GlobalVariable *seed;
@@ -106,7 +108,6 @@ namespace {
             maskGen[16] = createXorshift(&M, 16);
             maskGen[32] = createXorshift(&M, 32);
             maskGen[64] = createXorshift(&M, 64);
-            errs() << "Created func\n";
 
             // Get the LLVM context
             LLVMContext &context = M.getContext();
@@ -126,8 +127,6 @@ namespace {
             seed->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
             seed->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
 
-            errs() << "Created global\n";
-
             // Add the global variable to the module
             return true;
         }
@@ -136,92 +135,63 @@ namespace {
     // create the hash table in the global space
     std::unordered_map< Value* /*memory address*/, std::pair<Value*,  Type*>/*mask address*/> m;
 
-    unsigned int start_address = 0;
-
     bool runOnFunction(Function &F) override {
+      // DON'T instrument the xorshift mask-gen
+      // errs() << F.getName() << "\n";
+      if (F.getName().substr(0, 10) == "__xorshift") return false;
+      // Instruction &x = F.front().front();
+      // IRBuilder<> builder(&x);
+      // builder.CreateCall(maskGen[32], seed);
+      // std::srand(std::time(nullptr)); // initialize random seed
 
-            //! Make sure not to instrument the xorshift mask generators
-            if (F.getName().substr(0, 10) == "__xorshift")
-                return false;
-
-            errs() << F.getName() << "\n" << "\n";
-
-            Instruction &x = F.front().front();
-            IRBuilder<> builder(&x);
-            builder.CreateCall(maskGen[32], seed);
-            //std::cout<< "IR Builder" << x << "\n";
-
-
-      std::srand(std::time(nullptr)); // initialize random seed
       LLVMContext &Context = F.getContext();
       for (auto &BB : F) {
         for (auto &I : BB) {
-          if (auto *store = dyn_cast<StoreInst>(&I)) { 
-            // print st instruction
-            errs() << I << "\n";
-
+	  // errs() << I << "\n";
+          if (auto *store = dyn_cast<StoreInst>(&I)) {
+            for (auto visited : maskedStores) if (visited == store) { 
+              errs() << "store visited!" << "\n";
+              continue;
+	    }
             // allocate space for mask
-            Value *storedValue = store->getValueOperand();
-            unsigned int store_size = dyn_cast<IntegerType>(storedValue->getType())->getBitWidth();
-            AllocaInst* maskAlloca = new AllocaInst(storedValue->getType(), start_address, Twine(), store);
-            //errs() << *maskAlloca << "\n";
-            start_address += store_size;
-            
+            Value* storedValue = store->getValueOperand();
+            IntegerType* storedType = dyn_cast<IntegerType>(storedValue->getType());
+            if (storedType == nullptr) continue;
+	    unsigned int store_size = storedType->getBitWidth();
+            AllocaInst* maskAlloca = new AllocaInst(storedValue->getType(), 0, Twine(), store);            
             // generate mask of store_size bits
-
             IRBuilder<> builder(maskAlloca);
             Instruction* rand_num = builder.CreateCall(maskGen[store_size], seed);
             // store mask in allocated space
             StoreInst* maskStore = new StoreInst(rand_num, maskAlloca, store);
-            errs() << *maskStore << "\n";
-
-
-            errs() << "rand_num: " << *rand_num << "\n";
-
 
             // apply mask to write
-            // errs() << "----" << *random_number_value->getType() << ' ' << *storedValueType->getType() << "----\n";
-            // Instruction* maskInst = BinaryOperator::CreateXor(random_number_value, storedValue, "xor");
             Instruction* maskInst = BinaryOperator::CreateXor(rand_num, storedValue, "xor");
-
             maskInst->insertBefore(store);
-            errs() << "*maskInst"<< *maskInst << '\n';
-
             // store masked value to the store address
             // --> do getOperand(0) after to make sure we are storing the right mask value
             store->setOperand(0, maskInst);
-            errs() << "new store: " << *store << '\n';
 
             // get the store pointer (memory address)
             Value* stPtrOperand = store->getPointerOperand();
-            // errs() << "get store pointer operand *: " << *stPtrOperand << "\n";
-            // errs() << "get store pointer operand: " << stPtrOperand << "\n";
 
             // get the memory pointer for alloca inst
-            //Value* maskAddress2 = maskAlloca->getPointerOperand();
-            //Value* maskAddress = maskAlloca->getOperand(0); //this gives you the type of the new store
-            //errs() << "mask address1?: " << maskAddress << "\n"; 
-            unsigned int maskAddress = maskAlloca->getAddressSpace();
-            errs() << "mask address2?: " << maskAddress << "\n";
+            // Value* maskAddress2 = maskAlloca->getPointerOperand();
+            // Value* maskAddress = maskAlloca->getOperand(0); //this gives you the type of the new store
+            // unsigned int maskAddress = maskAlloca->getAddressSpace();
 
 
             // hash the memory address with mask value
             m[stPtrOperand] = std::make_pair(maskAlloca, storedValue->getType()); //replace with hash memory
-            errs() << "hash table key address: " << stPtrOperand << '\n';
-            errs() << "hash table: " << m[stPtrOperand].first << '\n';
-
-
-
-            // end of st inst
-            errs() << "\n" << "\n";
-
+	    maskedStores.push_back(store);
+	    maskedStores.push_back(maskStore);
           }
 
           if (auto *load = dyn_cast<LoadInst>(&I)) { //AllocaInst? someone could look into this
-            // print load instruction
-            errs() << I << "\n";
-
-
+            for (auto visited : maskedLoads) if (visited == load) {
+              errs() << "load visited!" << "\n";
+              continue;
+	    }
             // get load memory address (pointer)
             Value* ldPtrOperand = load->getPointerOperand();
 
@@ -229,17 +199,18 @@ namespace {
             if(m.find(ldPtrOperand) != m.end()){
               //found hash value
               LoadInst* maskLoad = new LoadInst(load->getType(), m[ldPtrOperand].first, Twine(), load);
-              errs() << "maskLoad: " << *maskLoad << "\n";             
-
-
               Instruction* ldMaskInst = BinaryOperator::CreateXor(maskLoad, load, "xor");
-              errs() << "loadMaskInst: " << *ldMaskInst << "\n";
-              // maskInst->insertAfter(load);
-
-              load->setOperand(0, ldMaskInst);
-              errs() << "updated load: " << load << "\n";
-            }
-             
+              ldMaskInst->insertAfter(load);
+              for (auto U : load->users()) {
+	        Instruction* userI = dyn_cast<Instruction>(U);
+	        if ((userI) && (userI != ldMaskInst)) {
+		  for (int i = 0; i < userI->getNumOperands(); ++i)
+		    if (load == userI->getOperand(i)) userI->setOperand(i, ldMaskInst);
+		}
+	      }
+              maskedLoads.push_back(load);
+              maskedLoads.push_back(maskLoad);
+	    }
           }
         
       
