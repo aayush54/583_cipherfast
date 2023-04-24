@@ -134,7 +134,8 @@ namespace {
 
 
     // create the hash table in the global space
-    std::unordered_map< Value* /*memory address*/, Value* /*mask address*/> m;
+    std::unordered_map< Value* /*memory address*/, std::pair<Value*,  Type*>/*mask address*/> m;
+
     unsigned int start_address = 0;
 
     bool runOnFunction(Function &F) override {
@@ -148,7 +149,7 @@ namespace {
             Instruction &x = F.front().front();
             IRBuilder<> builder(&x);
             builder.CreateCall(maskGen[32], seed);
-            std::cout<< "IR Builder" << x << "\n";
+            //std::cout<< "IR Builder" << x << "\n";
 
 
       std::srand(std::time(nullptr)); // initialize random seed
@@ -167,20 +168,24 @@ namespace {
             start_address += store_size;
             
             // generate mask of store_size bits
-            int random_number = std::rand() % int(pow(2, store_size));
-            errs() << "randomly generated mask: " << random_number << "\n";
-            Value* random_number_value = ConstantInt::get(IntegerType::get(Context, store_size), random_number);
-             errs() << random_number_value << "\n";
 
+            IRBuilder<> builder(maskAlloca);
+            Instruction* rand_num = builder.CreateCall(maskGen[store_size], seed);
             // store mask in allocated space
-            StoreInst* maskStore = new StoreInst(random_number_value, maskAlloca, store);
-            // errs() << *maskStore << "\n";
+            StoreInst* maskStore = new StoreInst(rand_num, maskAlloca, store);
+            errs() << *maskStore << "\n";
+
+
+            errs() << "rand_num: " << *rand_num << "\n";
+
 
             // apply mask to write
             // errs() << "----" << *random_number_value->getType() << ' ' << *storedValueType->getType() << "----\n";
-            Instruction* maskInst = BinaryOperator::CreateXor(random_number_value, storedValue, "xor");
+            // Instruction* maskInst = BinaryOperator::CreateXor(random_number_value, storedValue, "xor");
+            Instruction* maskInst = BinaryOperator::CreateXor(rand_num, storedValue, "xor");
+
             maskInst->insertBefore(store);
-            // errs() << *maskInst << '\n';
+            errs() << "*maskInst"<< *maskInst << '\n';
 
             // store masked value to the store address
             // --> do getOperand(0) after to make sure we are storing the right mask value
@@ -201,62 +206,41 @@ namespace {
 
 
             // hash the memory address with mask value
-            m[stPtrOperand] = random_number_value; //replace with hash memory
+            m[stPtrOperand] = std::make_pair(maskAlloca, storedValue->getType()); //replace with hash memory
             errs() << "hash table key address: " << stPtrOperand << '\n';
-            errs() << "hash table: " << m[stPtrOperand] << '\n';
+            errs() << "hash table: " << m[stPtrOperand].first << '\n';
+
+
 
             // end of st inst
             errs() << "\n" << "\n";
 
           }
 
-          // if (auto *load = dyn_cast<LoadInst>(&I)) { //AllocaInst? someone could look into this
-          //   load->print(llvm::outs());
-          //   llvm::outs() << "\n";
-          //   errs() << I << "\n";
-
-          //   // get load memory address (pointer)
-          //   Value* ldPtrOperand = load->getPointerOperand();
-          //   // Value* ldPtrOperand = load->getValueOperand();
-          //   errs() << "get load pointer operand *: " << *ldPtrOperand << "\n";
-          //   errs() << "get load pointer operand: " << ldPtrOperand << "\n";
-
-          //   // search load memory address from hash table
-          //   if(!m[ldPtrOperand]){
-          //     errs() << "not found in hash" << '\n';
-
-          //   }
-          //   else {
-          //     errs() << "found hash value! \n";
-              
-          //     // //Type* valType = ldPtrOperand->getType()->getPointerElementType(); // Type of value being pointed to
-
-          //     // //we can't do XOR with Value* of different type
-          //     // errs() << *m[ldPtrOperand]->getType() << "\n"; //i32?
-          //     // errs() << *ldPtrOperand << "\n"; // ptr
-              
+          if (auto *load = dyn_cast<LoadInst>(&I)) { //AllocaInst? someone could look into this
+            // print load instruction
+            errs() << I << "\n";
 
 
-          //     // Instruction* ldMaskInst = BinaryOperator::CreateXor(m[ldPtrOperand], ldPtrOperand, "xor");
-          //     // errs() << ldMaskInst << "\n";
-          //     // maskInst->insertAfter(load);
+            // get load memory address (pointer)
+            Value* ldPtrOperand = load->getPointerOperand();
 
-          //     // // how to return the value when XOR just compututes?
-          //     // // %insert_result = insertvalue %my_struct %s, i32 %value, 1
-          //     // // just
-          //     // // newPtr = ???;
-          //     // load->setOperand(0, newPtr);
+            // search load memory address from hash table
+            if(m.find(ldPtrOperand) != m.end()){
+              //found hash value
+              LoadInst* maskLoad = new LoadInst(load->getType(), m[ldPtrOperand].first, Twine(), load);
+              errs() << "maskLoad: " << *maskLoad << "\n";             
 
 
-              
-          //   }
-            
-          //   // get mask value from pointer
+              Instruction* ldMaskInst = BinaryOperator::CreateXor(maskLoad, load, "xor");
+              errs() << "loadMaskInst: " << *ldMaskInst << "\n";
+              // maskInst->insertAfter(load);
 
-          //   // decode data 
-          //   // (value stored in the load mem address) XOR (mask) =
+              load->setOperand(0, ldMaskInst);
+              errs() << "updated load: " << load << "\n";
+            }
              
-          // }
+          }
         
       
         }
