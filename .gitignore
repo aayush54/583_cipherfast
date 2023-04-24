@@ -24,5 +24,15 @@
 *.exe
 *.app
 
+
+# text files
+command.txt
+instructions.txt
+todo.txt
+
+# old files
+old/
+
 .vscode
 build
+
