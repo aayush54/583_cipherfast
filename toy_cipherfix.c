@@ -69,7 +69,10 @@ int main()
     memcpy(p2,key+4*sizeof(char),4*sizeof(char));
     memcpy(p3,key+8*sizeof(char),4*sizeof(char));
     memcpy(p4,key+12*sizeof(char),4*sizeof(char));
-
+    for (int i = 0; i < 4; ++i) p1[i] = key[i]; 
+    for (int i = 0; i < 4; ++i) p2[i] = key[4 + i]; 
+    for (int i = 0; i < 4; ++i) p3[i] = key[8 + i]; 
+    for (int i = 0; i < 4; ++i) p4[i] = key[12 + i]; 
     char result1[4];
     char result2[4];
     char result3[4];

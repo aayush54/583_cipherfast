@@ -27,7 +27,6 @@ using namespace llvm;
 
 std::vector<LoadInst*> maskedLoads;
 std::vector<StoreInst*> maskedStores;
-Function *main_func;
 std::unordered_map<int, Function *> maskGen;
 GlobalVariable *seed;
 
@@ -102,7 +101,10 @@ namespace {
     static char ID;
     PrintMemoryWrites() : FunctionPass(ID) {}
 
-    Function *funcPrintPrompt;
+    Function *funcInitMap;
+    Function *funcRecordMask;
+    Function *funcFindMask;
+    // Function *funcKillMap;
 
       bool doInitialization(Module &M) override
         {
@@ -130,24 +132,40 @@ namespace {
             seed->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
 
             // Declare extern function
-            Type *argType1 = Type::getInt64Ty(M.getContext());
-            Type *rsltType = Type::getInt32Ty(M.getContext());
-            FunctionType *extFuncType = FunctionType::get(rsltType, { argType1 }, false);
-            funcPrintPrompt = Function::Create(extFuncType, Function::ExternalLinkage, "printPrompt", M);
+            Type *argType1, *argType2, *rsltType;
+            FunctionType *extFuncType;
+            rsltType = Type::getVoidTy(M.getContext());
+            extFuncType = FunctionType::get(rsltType, {}, false);
+            funcInitMap = Function::Create(extFuncType, Function::ExternalLinkage, "initMap", M);
+
+            argType1 = Type::getInt8PtrTy(M.getContext());
+            argType2 = Type::getInt64Ty(M.getContext());
+            rsltType = Type::getVoidTy(M.getContext());
+            extFuncType = FunctionType::get(rsltType, { argType1, argType2 }, false);
+            funcRecordMask = Function::Create(extFuncType, Function::ExternalLinkage, "recordMask", M);
+
+	    argType1 = Type::getInt8PtrTy(M.getContext());
+            rsltType = Type::getInt64Ty(M.getContext());
+            extFuncType = FunctionType::get(rsltType, { argType1 }, false);
+            funcFindMask = Function::Create(extFuncType, Function::ExternalLinkage, "findMask", M);
             // Add the global variable to the module
             return true;
         }
 
 
     // create the hash table in the global space
-    // std::unordered_map< Value*, std::pair<Value*,  Type*> > m;
-    std::unordered_map< Value*, AllocaInst* > m; // memory address, mask address
+    // std::unordered_map< Value*, AllocaInst* > m; // memory address, mask address
 
     bool runOnFunction(Function &F) override {
       // DON'T instrument the xorshift mask-gen
       // errs() << F.getName() << "\n";
       if (F.getName().substr(0, 10) == "__xorshift") return false;
       Instruction *funcHead = &(F.front().front());
+      if (F.getName() == "main") {
+        std::vector< Value * > emptyArgs;
+        CallInst *callInitMap = CallInst::Create(funcInitMap, emptyArgs, "", funcHead);
+        errs() << "InitMap inserted\n";
+      }
       // IRBuilder<> builder(funcHead);
       // builder.CreateCall(maskGen[32], seed);
       // std::srand(std::time(nullptr)); // initialize random seed
@@ -156,7 +174,7 @@ namespace {
       for (auto &BB : F) {
         // errs() << BB.getName() << "\n";
         for (auto &I : BB) {
-	  // errs() << I << "\n";
+	  errs() << I << "\n";
           if (auto *store = dyn_cast<StoreInst>(&I)) {
             // excluded cases: masked/mask stores, non-integer stored value, ...
 	    // otherwise, nullptr dereference!
@@ -166,56 +184,66 @@ namespace {
             IntegerType* storedType = dyn_cast<IntegerType>(storedValue->getType());
             if (storedType == nullptr) continue;
 
-            // if pointer operand is first met, allocate space for mask at function's start
-	    // otherwise, used-before-defined!
-	    AllocaInst *maskAlloca;
-	    unsigned int store_size = storedType->getBitWidth();
-            if (m.find(stPtrOperand) == m.end()) {
-              maskAlloca = new AllocaInst(storedValue->getType(), 0, Twine(), funcHead);
-              // hash the memory address with mask value
-              m[stPtrOperand] = maskAlloca;
-	    } else maskAlloca = m[stPtrOperand];
-
             // generate mask of store_size bits
+	    unsigned int store_size = storedType->getBitWidth();
             IRBuilder<> builder(store);
             Instruction* rand_num = builder.CreateCall(maskGen[store_size], seed);
-            // store mask in allocated space
-            StoreInst* maskStore = new StoreInst(rand_num, maskAlloca, store);
             // apply mask to write
             Instruction* maskInst = BinaryOperator::CreateXor(rand_num, storedValue, "xor");
             maskInst->insertBefore(store);
             // store masked value to the store address
-            // --> do getOperand(0) after to make sure we are storing the right mask value
             store->setOperand(0, maskInst);
 
-            errs() << "MASK " << *maskAlloca << " RAND " <<  *rand_num << " MKSTR " << *maskStore << " STR " << *store << "\n";
-            Value *maskVal = ConstantInt::get(Type::getInt64Ty(Context), 31);
-            CallInst *callPrintPrompt = CallInst::Create(funcPrintPrompt, maskVal, "", (Instruction *)nullptr);
-            callPrintPrompt->insertAfter(store);
+            // store mask in hash table
+            LLVMContext &ptrContext = stPtrOperand->getContext();
+            PointerType *stPtrVoidTy = Type::getInt8PtrTy(ptrContext);
+            CastInst *ptrCast = CastInst::CreatePointerCast(stPtrOperand, stPtrVoidTy, "strptrcast");
+            ptrCast->insertAfter(store);
+
+            LLVMContext &intContext = rand_num->getContext();
+            Value* int64Instance = ConstantInt::get(intContext, APInt(64, 0));
+            CastInst* intCast = CastInst::CreateIntegerCast(rand_num, int64Instance->getType(), false, "strintcast");
+            intCast->insertAfter(ptrCast);
+
+            std::vector< Value * > pairArgs = { ptrCast, intCast };
+            CallInst *callRecordMask = CallInst::Create(funcRecordMask, pairArgs, "", (Instruction *)nullptr);
+            callRecordMask->insertAfter(intCast);
+
             maskedStores.push_back(store);
-	    maskedStores.push_back(maskStore);
+            errs() << "RAND " <<  *rand_num << " STR " << *store << " MASK " << *callRecordMask << "\n";
           }
 
           if (auto *load = dyn_cast<LoadInst>(&I)) { //AllocaInst? someone could look into this
             // excluded cases: masked/mask loads, not yet masked, ...
             for (auto visited : maskedLoads) if (visited == load) continue;
-            Value* ldPtrOperand = load->getPointerOperand();
+            IntegerType* loadType = dyn_cast<IntegerType>(load->getType());
+            if (loadType == nullptr) continue;
             // search load memory address from hash table
-            if (m.find(ldPtrOperand) == m.end()) continue;
+            Value* ldPtrOperand = load->getPointerOperand();
+            LLVMContext &ptrContext = ldPtrOperand->getContext();
+            PointerType *ldPtrVoidTy = Type::getInt8PtrTy(ptrContext);
+            CastInst *ptrCast = CastInst::CreatePointerCast(ldPtrOperand, ldPtrVoidTy, "ldptrcast");
+            ptrCast->insertAfter(load);
+            CallInst *callFindMask = CallInst::Create(funcFindMask, ptrCast, "", (Instruction *)nullptr);
+            callFindMask->insertAfter(ptrCast);
 
-            LoadInst* maskLoad = new LoadInst(load->getType(), m[ldPtrOperand], Twine(), load);
-            Instruction* ldMaskInst = BinaryOperator::CreateXor(maskLoad, load, "xor");
-	    ldMaskInst->insertAfter(load); // otherwise, floating instruction!
+            LLVMContext &intContext = callFindMask->getContext();
+            unsigned int intSize = load->getType()->getScalarSizeInBits();
+            Value* intXInstance = ConstantInt::get(intContext, APInt(intSize, 0));
+            CastInst *intCast = CastInst::CreateIntegerCast(callFindMask, intXInstance->getType(), false, "ldintcast");
+            intCast->insertAfter(callFindMask);
+            Instruction *ldMaskInst = BinaryOperator::CreateXor(intCast, load, "xor");
+	    ldMaskInst->insertAfter(intCast); // otherwise, floating instruction!
+
             // replace all uses of old loaded value
 	    for (auto U : load->users()) {
-	      Instruction* userI = dyn_cast<Instruction>(U);
+              Instruction* userI = dyn_cast<Instruction>(U);
 	      if ((userI) && (userI != ldMaskInst)) {
 		for (int i = 0; i < userI->getNumOperands(); ++i)
 		  if (load == userI->getOperand(i)) userI->setOperand(i, ldMaskInst);
               }
             }
             maskedLoads.push_back(load);
-            maskedLoads.push_back(maskLoad);
           }
 	}
       }
