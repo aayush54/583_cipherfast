@@ -2,7 +2,7 @@ add_llvm_library(LLVMPJT MODULE # Name of the shared library that you will gener
  mypass.cpp                     # Your pass
  mypass2.cpp                    # print all insts
  mypass3.cpp                    # print all loads
- randpass.cpp
+ mypass4.cpp                    # for AllocaInst memory check
  PLUGIN_TOOL
  opt
 )
