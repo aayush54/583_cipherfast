@@ -102,8 +102,6 @@ namespace {
     static char ID;
     PrintMemoryWrites() : FunctionPass(ID) {}
 
-    Function *funcPrintPrompt;
-
       bool doInitialization(Module &M) override
         {
             maskGen[8] = createXorshift(&M, 8);
@@ -129,11 +127,6 @@ namespace {
             seed->setLinkage(llvm::GlobalValue::LinkageTypes::PrivateLinkage);
             seed->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
 
-            // Declare extern function
-            Type *argType1 = Type::getInt64Ty(M.getContext());
-            Type *rsltType = Type::getInt32Ty(M.getContext());
-            FunctionType *extFuncType = FunctionType::get(rsltType, { argType1 }, false);
-            funcPrintPrompt = Function::Create(extFuncType, Function::ExternalLinkage, "printPrompt", M);
             // Add the global variable to the module
             return true;
         }
@@ -189,10 +182,7 @@ namespace {
             store->setOperand(0, maskInst);
 
             errs() << "MASK " << *maskAlloca << " RAND " <<  *rand_num << " MKSTR " << *maskStore << " STR " << *store << "\n";
-            Value *maskVal = ConstantInt::get(Type::getInt64Ty(Context), 31);
-            CallInst *callPrintPrompt = CallInst::Create(funcPrintPrompt, maskVal, "", (Instruction *)nullptr);
-            callPrintPrompt->insertAfter(store);
-            maskedStores.push_back(store);
+	    maskedStores.push_back(store);
 	    maskedStores.push_back(maskStore);
           }
 
